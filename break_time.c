@@ -3,15 +3,27 @@
  * @author Jacob Heard
  *
  * This program demonstrates a simple known plaintext attack when a key is 
- * generated using C rand().
+ * generated using an insecure seed.
  * 
- * The program takes the start and end times as unix timestamps and outputs 
- * any texts (and seeds) that match the known portion plaintext.
- * 
- * Internally, AES(128)-ECB is used to encrypt the data. 
- * Note that the actual vulnerability lies is in how the key is generated, 
- * not the cipher itself.
-**/
+ * For the sake of this example, assume srand() and rand() are a CSPRNG. An
+ * exploit for finding a secure seed while using rand() can be found in 
+ * the file break_rand.c
+ *
+ * Actual breakdown of program:
+ * 1. srand() is called on the given seed, and a 128bit key is generated. 
+ *    This key is used to encrypt some piece of plaintext. It is assumed we 
+ *    (the attacker) know the first few bytes of this plaintext, but nothing 
+ *    else.
+ * 2. srand() is called on all seeds from time_start to time_end. After each 
+ *    call, a new key is generated and the ciphertext from above is decrypted 
+ *    using this key. Each ciphertext is tested against the known portion of 
+ *    plaintext.
+ * 3. Any matches are listed as possible plaintexts for the given ciphertext.
+ *    This works well because there are only 2592000(~2^21) seconds in one 
+ *    month, or 31536000 (~2^25) seconds in one year. So if the month or year 
+ *    of the key generation is known, it is trivial to generate all possible 
+ *    states with modern computing.
+ **/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +33,7 @@
 #include "aes.h"
 
 
+/* Generates a random 16 byte key using rand() for each byte */
 void genKey(uint8_t *buf, int len) {
 	for(int i = 0; i < len; i++) {
 		buf[i] = rand() % 0x100;
@@ -29,7 +42,11 @@ void genKey(uint8_t *buf, int len) {
 
 int main(int argc, char* argv[]) {
 	if(argc < 4) {
+		printf("%s takes a seed (some unix timestamp) and given a start and end time, finds the seed using a known plaintext attack.\n\n", argv[0]);
 		printf("Usage: %s seed time_start time_end\n", argv[0]);
+		printf("    seed        Timestamp used to encrypt a message (unix timestamp)\n");
+		printf("    time_start  The start of the time period (unix timestamp)\n");
+		printf("    time_end    The end of the time period (unix timestamp)\n");
 		return 1;
 	}
 	
@@ -60,18 +77,25 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	int n = strlen(PLAINTEXT);
-	int m = strlen(SEARCHSTR);
-	printf("Plaintext to match: %s\n", PLAINTEXT);
+	int n = strlen(PLAINTEXT); // Length of plaintext
+	int m = strlen(SEARCHSTR); // Number of known bytes of plaintext
+	printf("Plaintext to match: %s\n\n", PLAINTEXT); // Print the plaintext we are attempting to match
 	srand(oseed);
-	genKey(key, 16);
-	AES_ECB_encrypt(PLAINTEXT, key, ciphertext, n + n %16);
-	
+	genKey(key, 16); // Generate the key for the original cipher
+	AES_ECB_encrypt(PLAINTEXT, key, ciphertext, n + n %16); // Find the original ciphertext
+
+	/* Now that all of the setup is done, this is the actual body of the 
+	 * program; generate all possible keys and test each one. 
+	 */
 	long seed;
 	for(seed = tstart; seed < tend; seed ++) {
+		// Seed the PRNG
 		srand(seed);
+		// Generate a new key
 		genKey(key, 16);
+		// Decrypt the ciphertext
 		AES_ECB_decrypt(ciphertext, key, buffer, n + n % 16);
+		// Print any possible matches
 		if(strncmp(buffer, SEARCHSTR, m) == 0) {
 			printf("Possible match (%d): %s\n", seed, buffer);
 		}
