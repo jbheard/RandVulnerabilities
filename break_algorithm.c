@@ -43,7 +43,7 @@ int main(void) {
 	printf("State is %d\n", next);
 	int p2 = prand();
 	
-	int *ptr = get_state(p1, p2, s);
+	int *ptr = get_state(p1, p2);
 	for(int i = 0; i < 256 && ptr[i] != 0; i++) {
 		printf("Found potential state %d\n", ptr[i]);
 	}
