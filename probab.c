@@ -25,7 +25,7 @@ int *get_state(int p1, int p2) {
 	for(int i = 0; i < 65536*SCALE_FACTOR && cnt < 256; i++) {
 		s = p1*65536 + i;
 		psrand(s); // Seed the PRNG
-		if(prand() == p2) // Check
+		if(prand() == p2) // Check second prime
 			ptr[cnt++] = s; // Add potential state
 	}
 	return ptr;

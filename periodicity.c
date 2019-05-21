@@ -10,11 +10,11 @@
  *
  * For this test, the seeds used are entirely insecure, assume that this is a
  * securely generated seed (has truly random entropy). An exploit for insecure
- * seeds (specifically using time()) can be found in break_time.c
+ * seeds (specifically using time()) can be found in seed_time.c
  *
  * It can be shown that although using a secure seed adds security, it is not much.
- * break_time needs only 2^27 tests to check a 4 year period of keys generated using time(),
- * while break_rand needs at most 2^31, because all possible seeds should be tested.
+ * seed_time.c needs only 2^27 tests to check a 4 year period of keys generated using time(),
+ * while periodicity.c needs at most 2^31, because all possible seeds should be tested.
  **/
 
 #include <stdio.h>

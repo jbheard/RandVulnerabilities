@@ -7,7 +7,7 @@
  * 
  * For the sake of this example, assume srand() and rand() are a CSPRNG. An
  * exploit for finding a secure seed while using rand() can be found in 
- * the file break_rand.c
+ * the file probab.c
  *
  * Actual breakdown of program:
  * 1. srand() is called on the given seed, and a 128bit key is generated. 
